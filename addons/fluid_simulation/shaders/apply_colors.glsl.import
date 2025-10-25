@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://c3nq7ryf53jq7"
+path="res://.godot/imported/apply_colors.glsl-46cd1981006c56d82650d8ead6f1a1b7.res"
+
+[deps]
+
+source_file="res://addons/fluid_simulation/shaders/apply_colors.glsl"
+dest_files=["res://.godot/imported/apply_colors.glsl-46cd1981006c56d82650d8ead6f1a1b7.res"]
+
+[params]
+

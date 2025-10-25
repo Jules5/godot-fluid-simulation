@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://c7g5bjyhx8i7t"
+path="res://.godot/imported/boundary.glsl-6feca43a568caff85035def31c162f70.res"
+
+[deps]
+
+source_file="res://addons/fluid_simulation/shaders/boundary.glsl"
+dest_files=["res://.godot/imported/boundary.glsl-6feca43a568caff85035def31c162f70.res"]
+
+[params]
+

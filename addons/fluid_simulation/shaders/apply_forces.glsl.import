@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://dim3vla1gr1sa"
+path="res://.godot/imported/apply_forces.glsl-d44ea4a702506a23bf5896cf40cb6f4a.res"
+
+[deps]
+
+source_file="res://addons/fluid_simulation/shaders/apply_forces.glsl"
+dest_files=["res://.godot/imported/apply_forces.glsl-d44ea4a702506a23bf5896cf40cb6f4a.res"]
+
+[params]
+

@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://befe1xn2hvccn"]
+
+[ext_resource type="Script" uid="uid://bldn1kgteb7ql" path="res://addons/fluid_simulation/demos/demo_colors.gd" id="1_viv70"]
+[ext_resource type="Script" uid="uid://fw4ldx8v66sj" path="res://addons/fluid_simulation/scripts/fluid_simulation_2D.gd" id="2_bqyim"]
+
+[node name="TextureRect" type="TextureRect" node_paths=PackedStringArray("fluid_sim")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_viv70")
+fluid_sim = NodePath("FluidSimulation2D")
+
+[node name="FluidSimulation2D" type="Node" parent="."]
+script = ExtResource("2_bqyim")
+resolution = Vector2(641, 360)
+metadata/_custom_type_script = "uid://fw4ldx8v66sj"
