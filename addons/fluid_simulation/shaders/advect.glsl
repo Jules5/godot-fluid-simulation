@@ -21,7 +21,7 @@ void main()
 {
 	ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
     vec2 velocity = imageLoad(input_velocity, uv).xy;
-    vec2 source_pos = uv - (params.dt * params.rdx * velocity);
-    vec4 source_data = texture(input_advected, (source_pos + 0.5) / (params.size));
+    vec2 source_pos = uv - (params.dt * params.rdx * velocity) + 0.5;
+    vec4 source_data = texture(input_advected, source_pos / (params.size));
     imageStore(output_data, uv, source_data);
 }
