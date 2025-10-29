@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://befe1xn2hvccn"]
 
-[ext_resource type="Script" uid="uid://bldn1kgteb7ql" path="res://addons/fluid_simulation/demos/demo_colors.gd" id="1_viv70"]
+[ext_resource type="Script" uid="uid://bldn1kgteb7ql" path="res://addons/fluid_simulation/demos/colors/demo_colors.gd" id="1_viv70"]
 [ext_resource type="Script" uid="uid://fw4ldx8v66sj" path="res://addons/fluid_simulation/scripts/fluid_simulation_2D.gd" id="2_bqyim"]
 
 [node name="TextureRect" type="TextureRect" node_paths=PackedStringArray("fluid_sim")]

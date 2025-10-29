@@ -1,4 +1,4 @@
-extends "demo_base.gd"
+extends "../demo_base.gd"
 
 var mouse_color: Color
 

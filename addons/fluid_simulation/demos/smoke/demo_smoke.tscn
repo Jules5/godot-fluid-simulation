@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://d1prt56h22eys"]
+
+[ext_resource type="Script" uid="uid://d18eyp6pyy0mi" path="res://addons/fluid_simulation/demos/smoke/demo_smoke.gd" id="1_nl0tb"]
+[ext_resource type="Script" uid="uid://fw4ldx8v66sj" path="res://addons/fluid_simulation/scripts/fluid_simulation_2D.gd" id="2_4glyr"]
+
+[node name="TextureRect" type="TextureRect" node_paths=PackedStringArray("fluid_sim")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_nl0tb")
+fluid_sim = NodePath("FluidSimulation2D")
+
+[node name="FluidSimulation2D" type="Node" parent="."]
+script = ExtResource("2_4glyr")
+resolution = Vector2(641, 360)
+metadata/_custom_type_script = "uid://fw4ldx8v66sj"
