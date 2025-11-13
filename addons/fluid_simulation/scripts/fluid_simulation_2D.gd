@@ -30,6 +30,8 @@ var tex_id_input_forces: RID
 var tex_id_input_colors: RID 
 var tex_id_temp: RID
 
+var sampler: RID
+
 var x_groups := 0
 var y_groups := 0
 
@@ -92,6 +94,14 @@ func _initialize() -> void:
 	tex_id_input_colors = _create_texture(tex_format)
 	tex_id_temp = _create_texture(tex_format)
 
+	# Init sampler
+	var sampler_state := RDSamplerState.new()
+	sampler_state.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
+	sampler_state.mag_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
+	sampler_state.repeat_u = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
+	sampler_state.repeat_v = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
+	sampler = device.sampler_create(sampler_state)
+
 func _swap_tex_velocity() -> void:
 
 	var tex_id_swap := tex_id_velocity
@@ -115,6 +125,8 @@ func _terminate() -> void:
 	if output_texture:
 		output_texture.texture_rd_rid = RID()
 
+	sampler = _free_rid(sampler)
+
 	tex_id_velocity = _free_rid(tex_id_velocity)
 	tex_id_pressure = _free_rid(tex_id_pressure)
 	tex_id_color = _free_rid(tex_id_color)
@@ -135,12 +147,12 @@ func _render_process(_dt: float) -> void:
 
 	# Apply forces
 	device.texture_update(tex_id_input_forces, 0, input_forces_img.get_data())
-	_run_compute(apply_forces_pipeline, [tex_id_velocity, tex_id_input_forces, tex_id_temp], _to_bytes(16, [resolution]))
+	_run_compute(apply_forces_pipeline, RID(), [tex_id_velocity, tex_id_input_forces, tex_id_temp], _to_bytes(16, [resolution]))
 	_swap_tex_velocity()
 	
 	# Apply colors
 	device.texture_update(tex_id_input_colors, 0, input_colors_img.get_data())
-	_run_compute(apply_colors_pipeline, [tex_id_color, tex_id_input_colors, tex_id_temp], _to_bytes(16, [resolution]))
+	_run_compute(apply_colors_pipeline, RID(), [tex_id_color, tex_id_input_colors, tex_id_temp], _to_bytes(16, [resolution]))
 	_swap_tex_color()
 	
 	# Clear inputs
@@ -149,7 +161,7 @@ func _render_process(_dt: float) -> void:
 	# Advect velocity
 	var grid_scale := 1.0 # We have a 1:1 ratio for now
 	var rdx := 1.0 / grid_scale 
-	_run_compute(advect_pipeline, [tex_id_velocity, tex_id_temp], _to_bytes(16, [resolution, _dt, rdx]), [tex_id_velocity])
+	_run_compute(advect_pipeline, tex_id_velocity, [tex_id_velocity, tex_id_temp], _to_bytes(16, [resolution, _dt, rdx]))
 	_swap_tex_velocity()
 
 	# Diffusion
@@ -158,33 +170,33 @@ func _render_process(_dt: float) -> void:
 	var rbeta := 1.0 / (4.0 + alpha)
 	var constants := _to_bytes(16, [resolution, alpha, rbeta])
 	for i in 30:
-		_run_compute(jacobi_pipeline, [tex_id_velocity, tex_id_velocity, tex_id_temp], constants)
+		_run_compute(jacobi_pipeline, RID(), [tex_id_velocity, tex_id_velocity, tex_id_temp], constants)
 		_swap_tex_velocity()
 
 	# Projection 
 	var half_rdx := rdx * 0.5
-	_run_compute(divergence_pipeline, [tex_id_velocity, tex_id_divergence], _to_bytes(16, [resolution, half_rdx]))
+	_run_compute(divergence_pipeline, RID(), [tex_id_velocity, tex_id_divergence], _to_bytes(16, [resolution, half_rdx]))
 	
 	alpha = -(delta_x * delta_x)
 	rbeta = 0.25
 	constants = _to_bytes(16, [resolution, alpha, rbeta])
 	for i in 60:
-		_run_compute(jacobi_pipeline, [tex_id_pressure, tex_id_divergence, tex_id_temp], constants)
+		_run_compute(jacobi_pipeline, RID(), [tex_id_pressure, tex_id_divergence, tex_id_temp], constants)
 		_swap_tex_pressure()
 
-	_run_compute(subtract_pipeline, [tex_id_pressure, tex_id_velocity, tex_id_temp], _to_bytes(16, [resolution, half_rdx]))
+	_run_compute(subtract_pipeline, RID(), [tex_id_pressure, tex_id_velocity, tex_id_temp], _to_bytes(16, [resolution, half_rdx]))
 	_swap_tex_velocity()
 	
 	# Boundaries
 	var bound_scale := -1.0
-	_run_compute(boundary_pipeline, [tex_id_velocity, tex_id_temp], _to_bytes(16, [resolution, bound_scale]))
+	_run_compute(boundary_pipeline, RID(), [tex_id_velocity, tex_id_temp], _to_bytes(16, [resolution, bound_scale]))
 	_swap_tex_velocity()
 	bound_scale = 1.0
-	_run_compute(boundary_pipeline, [tex_id_pressure, tex_id_temp], _to_bytes(16, [resolution, bound_scale]))
+	_run_compute(boundary_pipeline, RID(), [tex_id_pressure, tex_id_temp], _to_bytes(16, [resolution, bound_scale]))
 	_swap_tex_pressure()
 
 	# Advect color
-	_run_compute(advect_pipeline, [tex_id_velocity, tex_id_temp], _to_bytes(16, [resolution, _dt, rdx]), [tex_id_color])
+	_run_compute(advect_pipeline, tex_id_color, [tex_id_velocity, tex_id_temp], _to_bytes(16, [resolution, _dt, rdx]))
 	_swap_tex_color()
 	
 	# Update output
@@ -219,27 +231,19 @@ func _create_uniform_set(_pipeline: ComputePipeline, _texture_rd: RID, _uniform_
 
 func _create_sampler_uniform_set(_pipeline: ComputePipeline, _texture_rd: RID, _uniform_set: int) -> RID:
 
-	var sampler_state := RDSamplerState.new()
-	sampler_state.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
-	sampler_state.mag_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
-	sampler_state.repeat_u = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
-	sampler_state.repeat_v = RenderingDevice.SAMPLER_REPEAT_MODE_CLAMP_TO_EDGE
-
-	var sampler_rid := device.sampler_create(sampler_state)
-
 	var uniform := RDUniform.new()
 	uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE
 	uniform.binding = 0
-	uniform.add_id(sampler_rid)
+	uniform.add_id(sampler)
 	uniform.add_id(_texture_rd)
 
 	# Even though we're using 3 sets, they are identical, so we're kinda cheating.
 	return device.uniform_set_create([uniform], _pipeline.shader_id, _uniform_set)
 	
-func _free_rid(_texture_id: RID) -> RID:
+func _free_rid(_obj_rid: RID) -> RID:
 
-	if _texture_id.is_valid():
-		device.free_rid(_texture_id)
+	if _obj_rid.is_valid():
+		device.free_rid(_obj_rid)
 
 	return RID()
 
@@ -254,17 +258,18 @@ func _clear_sources() -> void:
 	input_forces_img.fill(Color.BLACK)
 	input_colors_img.fill(Color.TRANSPARENT)
 
-func _run_compute(_pipeline: ComputePipeline, _textures: Array[RID], _push_constants: PackedByteArray, _samplers: Array[RID] = []) -> void:
+func _run_compute(_pipeline: ComputePipeline, _sampler_texture: RID, _image_textures: Array[RID], _push_constants: PackedByteArray) -> void:
 
+	var samplers: Array[RID] = []
 	var uniforms: Array[RID] = []
 	
-	# Setup sampler uniforms
-	for i in _samplers.size():
-		uniforms.append(_create_sampler_uniform_set(_pipeline, _samplers[i], uniforms.size()))
+	# Setup sampler uniform
+	if _sampler_texture.is_valid():
+		uniforms.append(_create_sampler_uniform_set(_pipeline, _sampler_texture, uniforms.size()))
 
 	# Setup texture uniforms
-	for i in _textures.size():
-		uniforms.append(_create_uniform_set(_pipeline, _textures[i], uniforms.size()))
+	for i in _image_textures.size():
+		uniforms.append(_create_uniform_set(_pipeline, _image_textures[i], uniforms.size()))
 
 	# Run compute shader
 	var compute_list := device.compute_list_begin()
